@@ -1,4 +1,4 @@
-pragma solidity ^0.4.24;
+pragma solidity ^0.5.0;
 
 contract ERC20_mintable {
     mapping(address => uint256) public balances;
@@ -15,8 +15,9 @@ contract ERC20_mintable {
     event Transfer(address indexed from, address indexed to, uint tokens);
     event Mint(address indexed to, uint value);
     event Destroy(address indexed to, uint value);
+    event Locker(address from, address reciever, uint value);
 
-    constructor(uint256 initialAmount, string tokenName, uint8 decimalUnits, string tokenSymbol)
+    constructor(uint256 initialAmount, string memory tokenName, uint8 decimalUnits, string memory tokenSymbol)
         public
     {
         balances[msg.sender] = initialAmount;
@@ -30,7 +31,7 @@ contract ERC20_mintable {
     function transfer(address to, uint256 value)
         public returns (bool)
     {
-        require(balances[msg.sender] >= value);
+        require(balances[msg.sender] >= value, "Low Balance");
         require(msg.sender == to || balances[to] <= MAX_UINT256 - value);
 
         balances[msg.sender] -= value;
@@ -57,11 +58,11 @@ contract ERC20_mintable {
         balances[to] += amount;
 
         emit Mint(to, amount);
-        emit Transfer(0, to, amount);
+        emit Transfer(address(0), to, amount);
         return true;
     }
-    
-    function remit(address from, uint256 amount, address externalHedera)
+
+    function remit(address from, uint256 amount)
         public returns (bool)
     {
         require(totalSupply - amount >= 0);
@@ -71,7 +72,33 @@ contract ERC20_mintable {
         balances[from] -= amount;
 
         emit Destroy(from, amount);
-        emit Transfer(from, 0, amount);
+        emit Transfer(from, address(0), amount);
         return true;
     }
+
+    function hbar_to_wrappedHbar(address reciever, uint256 value)
+        public returns (bool)
+    {
+        require(balances[msg.sender] >= value, "Low Balance");
+
+        balances[msg.sender] -= value;
+        remit(msg.sender, value);
+
+        emit Locker(msg.sender, reciever, value);
+        return true;
+    }
+
+    function wrappedHbar_to_hbar(uint256 amount)
+        public returns (bool)
+    {
+        require(totalSupply <= MAX_UINT256 - amount);
+        require(balances[msg.sender] <= MAX_UINT256 - amount);
+
+        totalSupply += amount;
+        balances[msg.sender] += amount;
+
+        emit Mint(msg.sender, amount);
+        return true;
+    }
+
 }

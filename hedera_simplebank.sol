@@ -1,4 +1,4 @@
-pragma solidity ^0.4.13;
+pragma solidity ^0.5.0;
 contract SimpleBank {
 
     /* Fill in the keyword. Hint: We want to protect our users balance from other contracts*/
@@ -12,7 +12,7 @@ contract SimpleBank {
     event LogDepositMade(address accountAddress, uint amount);
 
     // Constructor, can receive one or many variables here; only one allowed
-    function SimpleBank() public {
+    constructor() public {
         /* Set the owner to the creator of this contract
          */
         owner = msg.sender;
@@ -29,19 +29,19 @@ contract SimpleBank {
            to the user attempting to redeem on the Ethereum chain. IF the send fails, add the amount back to the user's balance
            return the user's balance.*/
         address user = msg.sender;
-        
+
         // require(withdrawAmount >= owner.balance);
-        require(balances[user] >= withdrawAmount);
+        require(balances[user] >= withdrawAmount,"Low Balance");
 
         balances[user] -= withdrawAmount;
-        
+
         // transfer the amount to the owner
         balances[owner] += withdrawAmount;
 
         return balances[user];
     }
-    
-    
+
+
     /// @notice transfer hbar between users
     /// @dev This does not return any excess hbar sent to it
     /// @param withdrawAmount amount you want to withdraw
@@ -53,12 +53,12 @@ contract SimpleBank {
            to the user attempting to redeem on the Ethereum chain. IF the send fails, add the amount back to the user's balance
            return the user's balance.*/
         address user = msg.sender;
-        
+
         // require(withdrawAmount >= owner.balance);
-        require(balances[user] >= withdrawAmount);
+        require(balances[user] >= withdrawAmount,"Low Balance");
 
         balances[user] -= withdrawAmount;
-        
+
         // transfer the amount to the user
         balances[localUser] += withdrawAmount;
 
@@ -90,14 +90,14 @@ contract SimpleBank {
            to the user attempting to withdraw. IF the send fails, add the amount back to the user's balance
            return the user's balance.*/
         address user = msg.sender;
-        
-        // require(withdrawAmount >= owner.balance);
-        require(balances[user] >= withdrawAmount);
 
-        balances[user] -= withdrawAmount; 
-       
+        // require(withdrawAmount >= owner.balance);
+        require(balances[user] >= withdrawAmount,"Low Balance");
+
+        balances[user] -= withdrawAmount;
+
         user.transfer(withdrawAmount);
-    
+
         return balances[user];
     }
 
@@ -108,7 +108,7 @@ contract SimpleBank {
     function balance() public view returns (uint) {
         /* Get the balance of the sender of this transaction */
         address user = msg.sender;
-        
+
         return balances[user];
     }
 
@@ -118,6 +118,6 @@ contract SimpleBank {
     // Added so ether sent to this contract is reverted if the contract fails
     // otherwise, the sender's money is transferred to contract
     function () public {
-        revert();
+        revert("FALLBACK");
     }
 }
